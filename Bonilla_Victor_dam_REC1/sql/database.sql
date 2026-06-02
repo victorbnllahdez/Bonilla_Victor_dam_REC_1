@@ -29,5 +29,18 @@ muestra_id INT NOT NULL UNIQUE,
 autor_examen VARCHAR(150) NOT NULL,
 CONSTRAINT FK_INFORMES_FORENSES
         FOREIGN KEY (muestra_id) REFERENCES MUESTRAS_FORENSES(id)
-
 );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
