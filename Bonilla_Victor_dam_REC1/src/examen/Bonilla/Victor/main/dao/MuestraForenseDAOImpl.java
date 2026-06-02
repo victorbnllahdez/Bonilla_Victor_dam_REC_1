@@ -31,15 +31,15 @@ public class MuestraForenseDAOImpl extends AbstractDAO<MuestraForense> {
     private static final String SQL_FIND_ALL =
             "SELECT * FROM MUESTRAS_FORENSES ORDER BY ID";
 
-    private static final String SQL_FIND_BY_AGENCIA =
-            "SELECT * FROM MUESTRAS_FORENSES WHERE AGENCIA_ID=? ORDER BY CODIGO_CASO";
+    private static final String SQL_FIND_BY_CENTRO =
+            "SELECT * FROM MUESTRAS_FORENSES WHERE CENTRO_ID=? ORDER BY CODIGO_CASO";
 
 
     private static final String SQL_FIND_WITH_DETAIL =
             "SELECT M.ID, M.CODIGO_CASO, M.TIPO_MUESTRA, M.FECHA_RECOGIDA, M.ESTADO_CUSTODIA, M.CENTRO_ID, " +
-                    "I.ID, I.ADN_POSITIVO, I.NIVEL_RIESGO, I.CONCLUSION" +
-                    "FROM MUESTRAS_FORENSES M" +
-                    "INNER JOIN INFORMES_FORENSES I ON M.ID = I.MUESTRA_ID " +
+                    "I.ID, I.ADN_POSITIVO, I.NIVEL_RIESGO, I.CONCLUSION " +
+                    " FROM MUESTRAS_FORENSES M " +
+                    " INNER JOIN INFORMES_FORENSES I ON M.ID = I.MUESTRA_ID " +
                     "WHERE M.ID=?";
 
 
@@ -76,62 +76,56 @@ public class MuestraForenseDAOImpl extends AbstractDAO<MuestraForense> {
         m.setFechaRecogida(rs.getString(4));
         m.setEstadoCustodia(rs.getString(5));
         CentroForense c = new CentroForense();
-        c.setId(rs.getInt(8));
+        c.setId(rs.getInt(6));
         m.setCentro(c);
         // Estilo del proyecto de práctica: getDetalle() activa el lazy init
-        s.getDetalle().setId(rs.getInt(9));
-        s.getDetalle().setVelocidadMaxima(rs.getDouble(10));
-        s.getDetalle().setCombustible(rs.getString(11));
-        s.getDetalle().setVidaUtil(rs.getInt(12));
-        s.getDetalle().setTemperaturaMaxima(rs.getDouble(13));
-        return s;
+        m.getInforme().setId(rs.getInt(7));
+        m.getInforme().setAdnPositivo(rs.getBoolean(8));
+        m.getInforme().setNivelRiesgo(rs.getInt(9));
+        m.getInforme().setConclusion(rs.getString(10));
+        return m;
     }
 
     // -------------------------------------------------------
-    //  MAPPING — triple JOIN: satélite + agencia + detalle
+    //  MAPPING — triple JOIN: muestra + centro + informe
     // -------------------------------------------------------
-    private Satelite mapSateliteCompleto(ResultSet rs) throws Exception {
-        Satelite s = new Satelite();
-        s.setId(rs.getInt(1));
-        s.setNombre(rs.getString(2));
-        s.setOrbita(rs.getString(3));
-        s.setPeso(rs.getDouble(4));
-        s.setCoste(rs.getDouble(5));
-        s.setActivo(rs.getBoolean(6));
-        s.setFechaLanzamiento(rs.getString(7));
-        // Agencia completa (nombre y pais del JOIN)
-        Agencia a = new Agencia();
-        a.setId(rs.getInt(8));
-        a.setNombre(rs.getString(9));
-        a.setPais(rs.getString(10));
-        s.setAgencia(a);
+    private MuestraForense mapMuestraCompleto(ResultSet rs) throws Exception {
+        MuestraForense m = new MuestraForense();
+        m.setId(rs.getInt(1));
+        m.setCodigoCaso(rs.getInt(2));
+        m.setTipoMuestra(rs.getString(3));
+        m.setFechaRecogida(rs.getString(4));
+        m.setEstadoCustodia(rs.getString(5));
+
+        CentroForense c = new CentroForense();
+        c.setId(rs.getInt(6));
+        c.setNombre(rs.getString(7));
+        c.setPais(rs.getString(8));
+        m.setCentro(c);
         // Detalle con lazy init
-        s.getDetalle().setId(rs.getInt(11));
-        s.getDetalle().setVelocidadMaxima(rs.getDouble(12));
-        s.getDetalle().setCombustible(rs.getString(13));
-        s.getDetalle().setVidaUtil(rs.getInt(14));
-        s.getDetalle().setTemperaturaMaxima(rs.getDouble(15));
-        return s;
+        m.getInforme().setId(rs.getInt(9));
+        m.getInforme().setAdnPositivo(rs.getBoolean(10));
+        m.getInforme().setNivelRiesgo(rs.getInt(11));
+        m.getInforme().setConclusion(rs.getString(12));
+        return m;
     }
 
     // -------------------------------------------------------
     //  CRUD
     // -------------------------------------------------------
     @Override
-    public void add(Satelite s) {
+    public void add(MuestraForense m) {
         try {
             motorSQL.connect();
             motorSQL.prepare(SQL_INSERT);
-            motorSQL.getPs().setString(1, s.getNombre());
-            motorSQL.getPs().setString(2, s.getOrbita());
-            motorSQL.getPs().setDouble(3, s.getPeso());
-            motorSQL.getPs().setDouble(4, s.getCoste());
-            motorSQL.getPs().setBoolean(5, s.isActivo());
-            motorSQL.getPs().setString(6, s.getFechaLanzamiento());
-            motorSQL.getPs().setInt(7, s.getAgencia().getId()); // FK como objeto
-            motorSQL.getPs().setString(8, AUTOR);
+            motorSQL.getPs().setInt(1, m.getCodigoCaso());
+            motorSQL.getPs().setString(2, m.getTipoMuestra());
+            motorSQL.getPs().setString(3, m.getFechaRecogida());
+            motorSQL.getPs().setString(4, m.getEstadoCustodia());
+            motorSQL.getPs().setInt(5, m.getCentro().getId()); // FK como objeto
+            motorSQL.getPs().setString(6, AUTOR);
             int rows = motorSQL.executeUpdate();
-            System.out.println("[ADD SATELITE] Filas insertadas: " + rows);
+            System.out.println("[ADD MUESTRAS_FORENSES] Filas insertadas: " + rows);
         } catch (Exception e) {
             printError(e);
         } finally {
@@ -140,20 +134,18 @@ public class MuestraForenseDAOImpl extends AbstractDAO<MuestraForense> {
     }
 
     @Override
-    public void update(int id, Satelite s) {
+    public void update(int id, MuestraForense m) {
         try {
             motorSQL.connect();
             motorSQL.prepare(SQL_UPDATE);
-            motorSQL.getPs().setString(1, s.getNombre());
-            motorSQL.getPs().setString(2, s.getOrbita());
-            motorSQL.getPs().setDouble(3, s.getPeso());
-            motorSQL.getPs().setDouble(4, s.getCoste());
-            motorSQL.getPs().setBoolean(5, s.isActivo());
-            motorSQL.getPs().setString(6, s.getFechaLanzamiento());
-            motorSQL.getPs().setInt(7, s.getAgencia().getId());
-            motorSQL.getPs().setInt(8, id); // id siempre el último
+            motorSQL.getPs().setInt(1, m.getCodigoCaso());
+            motorSQL.getPs().setString(2, m.getTipoMuestra());
+            motorSQL.getPs().setString(3, m.getFechaRecogida());
+            motorSQL.getPs().setString(4, m.getEstadoCustodia());
+            motorSQL.getPs().setInt(5, m.getCentro().getId()); // FK como objeto
+            motorSQL.getPs().setInt(6, id); // id siempre el último
             int rows = motorSQL.executeUpdate();
-            System.out.println("[UPDATE SATELITE] Filas actualizadas: " + rows);
+            System.out.println("[UPDATE MUESTRAS_FORENSES] Filas actualizadas: " + rows);
         } catch (Exception e) {
             printError(e);
         } finally {
@@ -168,7 +160,7 @@ public class MuestraForenseDAOImpl extends AbstractDAO<MuestraForense> {
             motorSQL.prepare(SQL_DELETE);
             motorSQL.getPs().setInt(1, id);
             int rows = motorSQL.executeUpdate();
-            System.out.println("[DELETE SATELITE] Filas eliminadas: " + rows);
+            System.out.println("[DELETE MUESTRAS_FORENSES] Filas eliminadas: " + rows);
         } catch (Exception e) {
             printError(e);
         } finally {
@@ -177,30 +169,30 @@ public class MuestraForenseDAOImpl extends AbstractDAO<MuestraForense> {
     }
 
     @Override
-    public Satelite find(int id) {
-        Satelite s = null;
+    public MuestraForense find(int id) {
+        MuestraForense m = null;
         try {
             motorSQL.connect();
             motorSQL.prepare(SQL_FIND);
             motorSQL.getPs().setInt(1, id);
             ResultSet rs = motorSQL.executeQuery();
-            if (rs.next()) s = mapSatelite(rs); // una fila → if
+            if (rs.next()) m = mapMuestra(rs); // una fila → if
         } catch (Exception e) {
             printError(e);
         } finally {
             motorSQL.close();
         }
-        return s;
+        return m;
     }
 
     @Override
-    public ArrayList<Satelite> findAll() {
-        ArrayList<Satelite> lista = new ArrayList<>();
+    public ArrayList<MuestraForense> findAll() {
+        ArrayList<MuestraForense> lista = new ArrayList<>();
         try {
             motorSQL.connect();
             motorSQL.prepare(SQL_FIND_ALL);
             ResultSet rs = motorSQL.executeQuery();
-            while (rs.next()) lista.add(mapSatelite(rs)); // varias filas → while
+            while (rs.next()) lista.add(mapMuestra(rs)); // varias filas → while
         } catch (Exception e) {
             printError(e);
         } finally {
@@ -210,18 +202,18 @@ public class MuestraForenseDAOImpl extends AbstractDAO<MuestraForense> {
     }
 
     // -------------------------------------------------------
-    //  Consultas específicas de Satelite
+    //  Consultas específicas de Muestras
     // -------------------------------------------------------
 
-    // TEST 5 — satélites de una agencia concreta
-    public ArrayList<Satelite> findByAgencia(int agenciaId) {
-        ArrayList<Satelite> lista = new ArrayList<>();
+    // TEST 5 — muestras de un centro concreto
+    public ArrayList<MuestraForense> findByCentro(int centroId) {
+        ArrayList<MuestraForense> lista = new ArrayList<>();
         try {
             motorSQL.connect();
-            motorSQL.prepare(SQL_FIND_BY_AGENCIA);
-            motorSQL.getPs().setInt(1, agenciaId);
+            motorSQL.prepare(SQL_FIND_BY_CENTRO);
+            motorSQL.getPs().setInt(1, centroId);
             ResultSet rs = motorSQL.executeQuery();
-            while (rs.next()) lista.add(mapSatelite(rs));
+            while (rs.next()) lista.add(mapMuestra(rs));
         } catch (Exception e) {
             printError(e);
         } finally {
@@ -231,35 +223,21 @@ public class MuestraForenseDAOImpl extends AbstractDAO<MuestraForense> {
     }
 
     // TEST 6 — satélite con su detalle (JOIN 1:1)
-    public Satelite findWithDetail(int id) {
-        Satelite s = null;
+    public MuestraForense findWithDetail(int id) {
+        MuestraForense m = null;
         try {
             motorSQL.connect();
             motorSQL.prepare(SQL_FIND_WITH_DETAIL);
             motorSQL.getPs().setInt(1, id);
             ResultSet rs = motorSQL.executeQuery();
-            if (rs.next()) s = mapSateliteConDetalle(rs);
+            if (rs.next()) m = mapMuestraCompleto(rs);
         } catch (Exception e) {
             printError(e);
         } finally {
             motorSQL.close();
         }
-        return s;
+        return m;
     }
 
-    // BONUS — satélites activos con agencia y detalle completos (triple JOIN)
-    public ArrayList<Satelite> findActivosConTodo() {
-        ArrayList<Satelite> lista = new ArrayList<>();
-        try {
-            motorSQL.connect();
-            motorSQL.prepare(SQL_ACTIVOS_CON_TODO);
-            ResultSet rs = motorSQL.executeQuery();
-            while (rs.next()) lista.add(mapSateliteCompleto(rs));
-        } catch (Exception e) {
-            printError(e);
-        } finally {
-            motorSQL.close();
-        }
-        return lista;
-    }
+
 }

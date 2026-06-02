@@ -4,14 +4,14 @@ import java.sql.DriverManager;
 
 public class PostgreMotorSQL extends MotorSQL {
 
-    private static final String URL      = "jdbc:postgresql://TU_HOST.rds.amazonaws.com:5432/bonilla-victor-dam-recuperacion";
+    private static final String DRIVER   = "org.postgresql.Driver";
+    private static final String URL      = "jdbc:postgresql://bonilla-victor-dam-recuperacion.clugbyfnus07.us-east-1.rds.amazonaws.com:5432/postgres";
     private static final String USER     = "postgres";
     private static final String PASSWORD = "postgres";
-    private static final String DRIVER   = "org.postgresql.Driver";
-    // ============================================================
 
     public PostgreMotorSQL() {
-        super(URL, USER, PASSWORD, DRIVER);
+        super(URL, USER, PASSWORD);
+        this.driver = DRIVER;
     }
 
     @Override

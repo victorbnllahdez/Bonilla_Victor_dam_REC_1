@@ -13,7 +13,7 @@ public abstract class MotorSQL {
     protected Connection conn;
     protected PreparedStatement ps;
 
-    public MotorSQL(String url, String user, String password, String driver) {
+    public MotorSQL(String url, String user, String password) {
         this.url = url;
         this.user = user;
         this.password = password;
